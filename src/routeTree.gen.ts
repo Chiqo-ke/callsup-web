@@ -9,38 +9,188 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RulesRouteImport } from './routes/rules'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ConversationsRouteImport } from './routes/conversations'
+import { Route as ContextRouteImport } from './routes/context'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as QueueIndexRouteImport } from './routes/queue.index'
+import { Route as QueueIdRouteImport } from './routes/queue.$id'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RulesRoute = RulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConversationsRoute = ConversationsRouteImport.update({
+  id: '/conversations',
+  path: '/conversations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContextRoute = ContextRouteImport.update({
+  id: '/context',
+  path: '/context',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QueueIndexRoute = QueueIndexRouteImport.update({
+  id: '/queue/',
+  path: '/queue/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueueIdRoute = QueueIdRouteImport.update({
+  id: '/queue/$id',
+  path: '/queue/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/context': typeof ContextRoute
+  '/conversations': typeof ConversationsRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/rules': typeof RulesRoute
+  '/settings': typeof SettingsRoute
+  '/queue/$id': typeof QueueIdRoute
+  '/queue/': typeof QueueIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/context': typeof ContextRoute
+  '/conversations': typeof ConversationsRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/rules': typeof RulesRoute
+  '/settings': typeof SettingsRoute
+  '/queue/$id': typeof QueueIdRoute
+  '/queue': typeof QueueIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/context': typeof ContextRoute
+  '/conversations': typeof ConversationsRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/rules': typeof RulesRoute
+  '/settings': typeof SettingsRoute
+  '/queue/$id': typeof QueueIdRoute
+  '/queue/': typeof QueueIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/context'
+    | '/conversations'
+    | '/login'
+    | '/register'
+    | '/rules'
+    | '/settings'
+    | '/queue/$id'
+    | '/queue/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/context'
+    | '/conversations'
+    | '/login'
+    | '/register'
+    | '/rules'
+    | '/settings'
+    | '/queue/$id'
+    | '/queue'
+  id:
+    | '__root__'
+    | '/'
+    | '/context'
+    | '/conversations'
+    | '/login'
+    | '/register'
+    | '/rules'
+    | '/settings'
+    | '/queue/$id'
+    | '/queue/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContextRoute: typeof ContextRoute
+  ConversationsRoute: typeof ConversationsRoute
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
+  RulesRoute: typeof RulesRoute
+  SettingsRoute: typeof SettingsRoute
+  QueueIdRoute: typeof QueueIdRoute
+  QueueIndexRoute: typeof QueueIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rules': {
+      id: '/rules'
+      path: '/rules'
+      fullPath: '/rules'
+      preLoaderRoute: typeof RulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conversations': {
+      id: '/conversations'
+      path: '/conversations'
+      fullPath: '/conversations'
+      preLoaderRoute: typeof ConversationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/context': {
+      id: '/context'
+      path: '/context'
+      fullPath: '/context'
+      preLoaderRoute: typeof ContextRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +198,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/queue/': {
+      id: '/queue/'
+      path: '/queue'
+      fullPath: '/queue/'
+      preLoaderRoute: typeof QueueIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/queue/$id': {
+      id: '/queue/$id'
+      path: '/queue/$id'
+      fullPath: '/queue/$id'
+      preLoaderRoute: typeof QueueIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContextRoute: ContextRoute,
+  ConversationsRoute: ConversationsRoute,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
+  RulesRoute: RulesRoute,
+  SettingsRoute: SettingsRoute,
+  QueueIdRoute: QueueIdRoute,
+  QueueIndexRoute: QueueIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
