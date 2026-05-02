@@ -12,11 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as QueueRouteImport } from './routes/queue'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ConversationsRouteImport } from './routes/conversations'
 import { Route as ContextRouteImport } from './routes/context'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as QueueIndexRouteImport } from './routes/queue.index'
 import { Route as QueueIdRouteImport } from './routes/queue.$id'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -32,6 +32,11 @@ const RulesRoute = RulesRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueueRoute = QueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -54,15 +59,10 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const QueueIndexRoute = QueueIndexRouteImport.update({
-  id: '/queue/',
-  path: '/queue/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const QueueIdRoute = QueueIdRouteImport.update({
-  id: '/queue/$id',
-  path: '/queue/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => QueueRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -70,22 +70,22 @@ export interface FileRoutesByFullPath {
   '/context': typeof ContextRoute
   '/conversations': typeof ConversationsRoute
   '/login': typeof LoginRoute
+  '/queue': typeof QueueRouteWithChildren
   '/register': typeof RegisterRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
   '/queue/$id': typeof QueueIdRoute
-  '/queue/': typeof QueueIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/context': typeof ContextRoute
   '/conversations': typeof ConversationsRoute
   '/login': typeof LoginRoute
+  '/queue': typeof QueueRouteWithChildren
   '/register': typeof RegisterRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
   '/queue/$id': typeof QueueIdRoute
-  '/queue': typeof QueueIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -93,11 +93,11 @@ export interface FileRoutesById {
   '/context': typeof ContextRoute
   '/conversations': typeof ConversationsRoute
   '/login': typeof LoginRoute
+  '/queue': typeof QueueRouteWithChildren
   '/register': typeof RegisterRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
   '/queue/$id': typeof QueueIdRoute
-  '/queue/': typeof QueueIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -106,33 +106,33 @@ export interface FileRouteTypes {
     | '/context'
     | '/conversations'
     | '/login'
+    | '/queue'
     | '/register'
     | '/rules'
     | '/settings'
     | '/queue/$id'
-    | '/queue/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/context'
     | '/conversations'
     | '/login'
+    | '/queue'
     | '/register'
     | '/rules'
     | '/settings'
     | '/queue/$id'
-    | '/queue'
   id:
     | '__root__'
     | '/'
     | '/context'
     | '/conversations'
     | '/login'
+    | '/queue'
     | '/register'
     | '/rules'
     | '/settings'
     | '/queue/$id'
-    | '/queue/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -140,11 +140,10 @@ export interface RootRouteChildren {
   ContextRoute: typeof ContextRoute
   ConversationsRoute: typeof ConversationsRoute
   LoginRoute: typeof LoginRoute
+  QueueRoute: typeof QueueRouteWithChildren
   RegisterRoute: typeof RegisterRoute
   RulesRoute: typeof RulesRoute
   SettingsRoute: typeof SettingsRoute
-  QueueIdRoute: typeof QueueIdRoute
-  QueueIndexRoute: typeof QueueIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -168,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/queue': {
+      id: '/queue'
+      path: '/queue'
+      fullPath: '/queue'
+      preLoaderRoute: typeof QueueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -198,33 +204,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/queue/': {
-      id: '/queue/'
-      path: '/queue'
-      fullPath: '/queue/'
-      preLoaderRoute: typeof QueueIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/queue/$id': {
       id: '/queue/$id'
-      path: '/queue/$id'
+      path: '/$id'
       fullPath: '/queue/$id'
       preLoaderRoute: typeof QueueIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof QueueRoute
     }
   }
 }
+
+interface QueueRouteChildren {
+  QueueIdRoute: typeof QueueIdRoute
+}
+
+const QueueRouteChildren: QueueRouteChildren = {
+  QueueIdRoute: QueueIdRoute,
+}
+
+const QueueRouteWithChildren = QueueRoute._addFileChildren(QueueRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContextRoute: ContextRoute,
   ConversationsRoute: ConversationsRoute,
   LoginRoute: LoginRoute,
+  QueueRoute: QueueRouteWithChildren,
   RegisterRoute: RegisterRoute,
   RulesRoute: RulesRoute,
   SettingsRoute: SettingsRoute,
-  QueueIdRoute: QueueIdRoute,
-  QueueIndexRoute: QueueIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
