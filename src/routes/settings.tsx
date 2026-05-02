@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+import { auth, health, type UserProfile } from "@/lib/api";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({ meta: [{ title: "Settings — CALLSUP" }] }),
@@ -13,8 +16,40 @@ export const Route = createFileRoute("/settings")({
 });
 
 function SettingsPage() {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    auth.me()
+      .then(setProfile)
+      .catch((e: unknown) => {
+        const err = e as { message?: string };
+        setError(err.message ?? "Failed to load profile");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    health.check()
+      .then(() => setApiStatus("online"))
+      .catch(() => setApiStatus("offline"));
+  }, []);
+
+  if (loading) {
+    return (
+      <AppShell title="Settings" subtitle="Workspace, team and integrations">
+        <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading…
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell title="Settings" subtitle="Workspace, team and integrations">
+      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
@@ -23,18 +58,26 @@ function SettingsPage() {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Business name</Label>
-                  <Input defaultValue="Acme Inc" className="h-11" />
+                  <Input value={profile?.business_name ?? ""} className="h-11" readOnly />
                 </div>
                 <div className="space-y-2">
                   <Label>Business ID</Label>
-                  <Input defaultValue="550e8400-e29b-41d4-a716-446655440000" className="h-11 font-mono text-sm" readOnly />
+                  <Input value={profile?.business_id ?? ""} className="h-11 font-mono text-sm" readOnly />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Default greeting</Label>
-                <Input defaultValue="Hello, this is Acme Inc, how may I assist you today?" className="h-11" />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Username</Label>
+                  <Input value={profile?.username ?? ""} className="h-11" readOnly />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={profile?.email ?? ""} className="h-11" readOnly />
+                </div>
               </div>
-              <div className="flex justify-end"><Button>Save changes</Button></div>
+              <div className="flex justify-end">
+                <Button disabled title="Profile editing is not yet available">Save changes</Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -66,19 +109,21 @@ function SettingsPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Service status</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <Status label="API" status="healthy" />
-              <Status label="OpenCode LLM" status="healthy" />
-              <Status label="LLM adapter" status="healthy" />
-              <Status label="STT (RapidAPI)" status="degraded" />
-              <Status label="TTS (OpenAI)" status="healthy" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className={`h-2 w-2 rounded-full ${apiStatus === "online" ? "bg-success" : apiStatus === "offline" ? "bg-destructive" : "bg-warning"}`} />
+                  <span className="text-foreground">API</span>
+                </div>
+                <Badge variant={apiStatus === "online" ? "secondary" : apiStatus === "offline" ? "destructive" : "secondary"} className="capitalize">{apiStatus}</Badge>
+              </div>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader><CardTitle className="text-base">Plan</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Account</CardTitle></CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">Pro</div>
-              <p className="text-sm text-muted-foreground mt-1">Unlimited calls · 5 seats · 90-day retention</p>
-              <Button variant="outline" className="mt-4 w-full">Manage billing</Button>
+              <div className="text-sm text-muted-foreground space-y-1">
+                {profile?.created_at && <p>Member since {new Date(profile.created_at).toLocaleDateString()}</p>}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -95,23 +140,6 @@ function ToggleRow({ title, desc, defaultOn }: { title: string; desc: string; de
         <div className="text-sm text-muted-foreground">{desc}</div>
       </div>
       <Switch defaultChecked={defaultOn} />
-    </div>
-  );
-}
-
-function Status({ label, status }: { label: string; status: "healthy" | "degraded" | "down" }) {
-  const map = {
-    healthy: { color: "bg-success", text: "Operational", variant: "secondary" as const },
-    degraded: { color: "bg-warning", text: "Degraded", variant: "secondary" as const },
-    down: { color: "bg-destructive", text: "Down", variant: "destructive" as const },
-  }[status];
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2.5">
-        <span className={`h-2 w-2 rounded-full ${map.color}`} />
-        <span className="text-foreground">{label}</span>
-      </div>
-      <Badge variant={map.variant}>{map.text}</Badge>
     </div>
   );
 }

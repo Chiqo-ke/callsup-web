@@ -1,49 +1,103 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, User, Bot, CheckCircle2, UserCheck, FileText, Clock } from "lucide-react";
+import { ArrowLeft, User, Bot, CheckCircle2, UserCheck, Clock, Loader2 } from "lucide-react";
+import { queue, auth, type EscalationTicket } from "@/lib/api";
 
 export const Route = createFileRoute("/queue/$id")({
   head: () => ({ meta: [{ title: "Ticket — CALLSUP" }] }),
   component: TicketDetailPage,
 });
 
-const conversation = [
-  { role: "assistant", content: "Hello, this is Acme Inc. How may I assist you today?" },
-  { role: "user", content: "I've been charged twice for my subscription this month and I'm furious." },
-  { role: "assistant", content: "I'm sorry to hear that. Can you confirm the email address associated with your account?" },
-  { role: "user", content: "It's [REDACTED_EMAIL]. This is the third time this happens." },
-  { role: "assistant", content: "Thank you. I can see two charges on your account. I'll need a manager to authorize the refund." },
-  { role: "user", content: "Then get me a manager. Now." },
-  { role: "assistant", content: "I understand. I've opened a support ticket for you. A human agent will be with you shortly — please hold the line." },
-];
-
 function TicketDetailPage() {
   const { id } = Route.useParams();
+  const [ticket, setTicket] = useState<EscalationTicket | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    queue.get(id)
+      .then(setTicket)
+      .catch((e) => setError(e.message ?? "Failed to load ticket"))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  async function handleClaim() {
+    if (!ticket) return;
+    setActionLoading(true);
+    try {
+      const me = await auth.me();
+      const updated = await queue.update(id, { status: "claimed", claimed_by: me.username });
+      setTicket(updated);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setError(err.message ?? "Failed to claim ticket");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleResolve() {
+    if (!ticket) return;
+    setActionLoading(true);
+    try {
+      const updated = await queue.update(id, { status: "resolved", claimed_by: ticket.claimed_by ?? "" });
+      setTicket(updated);
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      setError(err.message ?? "Failed to resolve ticket");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <AppShell title="Loading…" subtitle="">
+        <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading ticket…
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (error || !ticket) {
+    return (
+      <AppShell title="Error" subtitle="">
+        <div className="py-12 text-center text-destructive">{error ?? "Ticket not found"}</div>
+      </AppShell>
+    );
+  }
+
+  const msgCount = ticket.conversation_history?.length ?? 0;
+
   return (
     <AppShell
-      title={`Ticket ${id}`}
-      subtitle="Escalated from AI agent · call-001"
+      title={`Ticket ${ticket.id}`}
+      subtitle={`Escalated from AI agent · ${ticket.conv_id}`}
       actions={
         <Link to="/queue">
           <Button variant="outline" className="gap-2"><ArrowLeft className="h-4 w-4" /> Back to queue</Button>
         </Link>
       }
     >
+      {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader className="flex-row items-center justify-between border-b border-border">
               <div>
                 <CardTitle className="text-lg">Conversation transcript</CardTitle>
-                <p className="text-sm text-muted-foreground mt-0.5">7 messages · escalated 2 min ago</p>
+                <p className="text-sm text-muted-foreground mt-0.5">{msgCount} messages</p>
               </div>
-              <Badge variant="destructive">High priority</Badge>
+              <PriorityBadge priority={ticket.priority} />
             </CardHeader>
             <CardContent className="p-6 space-y-4 max-h-[560px] overflow-y-auto">
-              {conversation.map((m, i) => (
+              {(ticket.conversation_history ?? []).map((m, i) => (
                 <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
                   <div className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center ${m.role === "assistant" ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
                     {m.role === "assistant" ? <Bot className="h-5 w-5" /> : <User className="h-5 w-5" />}
@@ -53,14 +107,9 @@ function TicketDetailPage() {
                   </div>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">Internal notes</CardTitle></CardHeader>
-            <CardContent>
-              <textarea className="w-full min-h-28 rounded-md border border-input bg-background p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Add a note for your team…" />
-              <div className="mt-3 flex justify-end"><Button size="sm">Save note</Button></div>
+              {msgCount === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">No conversation history available.</p>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -69,21 +118,35 @@ function TicketDetailPage() {
           <Card>
             <CardHeader><CardTitle className="text-base">Actions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full justify-start gap-2"><UserCheck className="h-4 w-4" /> Claim ticket</Button>
-              <Button variant="outline" className="w-full justify-start gap-2"><CheckCircle2 className="h-4 w-4" /> Mark resolved</Button>
-              <Button variant="ghost" className="w-full justify-start gap-2"><FileText className="h-4 w-4" /> Export transcript</Button>
+              {ticket.status === "pending" && (
+                <Button className="w-full justify-start gap-2" onClick={handleClaim} disabled={actionLoading}>
+                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+                  Claim ticket
+                </Button>
+              )}
+              {ticket.status !== "resolved" && (
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={handleResolve} disabled={actionLoading}>
+                  {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  Mark resolved
+                </Button>
+              )}
+              {ticket.status === "resolved" && (
+                <p className="text-sm text-success text-center py-2">Ticket resolved</p>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader><CardTitle className="text-base">Details</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
-              <Row label="Ticket ID" value={<span className="font-mono">{id}</span>} />
-              <Row label="Conversation" value={<span className="font-mono">call-001</span>} />
-              <Row label="Reason" value="Customer requested human manager for billing dispute" />
-              <Row label="Rule triggered" value="Manager request (high)" />
-              <Row label="Created" value={<span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> 2 min ago</span>} />
-              <Row label="Status" value={<Badge className="bg-destructive/10 text-destructive border border-destructive/20">Pending</Badge>} />
+              <Row label="Ticket ID" value={<span className="font-mono">{ticket.id}</span>} />
+              <Row label="Conversation" value={<span className="font-mono">{ticket.conv_id}</span>} />
+              <Row label="Reason" value={ticket.reason} />
+              {ticket.rule_triggered && <Row label="Rule triggered" value={ticket.rule_triggered} />}
+              <Row label="Created" value={<span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {new Date(ticket.created_at).toLocaleString()}</span>} />
+              <Row label="Status" value={<StatusBadge status={ticket.status} />} />
+              {ticket.claimed_by && <Row label="Claimed by" value={ticket.claimed_by} />}
+              {ticket.summary && <Row label="Summary" value={ticket.summary} />}
             </CardContent>
           </Card>
         </div>
@@ -98,5 +161,25 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <div className="text-muted-foreground">{label}</div>
       <div className="text-foreground text-right">{value}</div>
     </div>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: string }) {
+  if (priority === "high") return <Badge variant="destructive" className="capitalize">{priority}</Badge>;
+  if (priority === "medium") return <Badge className="capitalize bg-warning text-warning-foreground">{priority}</Badge>;
+  return <Badge variant="secondary" className="capitalize">{priority}</Badge>;
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    pending: "bg-destructive/10 text-destructive border-destructive/20",
+    claimed: "bg-info/10 text-info border-info/20",
+    resolved: "bg-success/10 text-success border-success/20",
+  };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${map[status] ?? ""}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      <span className="capitalize">{status}</span>
+    </span>
   );
 }
