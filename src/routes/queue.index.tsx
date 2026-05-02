@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, Radio } from "lucide-react";
 
-export const Route = createFileRoute("/queue")({
+export const Route = createFileRoute("/queue/")({
   head: () => ({ meta: [{ title: "Escalation Queue — CALLSUP" }] }),
   component: QueuePage,
 });
