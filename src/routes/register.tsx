@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/register")({
   head: () => ({ meta: [{ title: "Create workspace — CALLSUP" }] }),
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/register")({
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [businessName, setBusinessName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -25,7 +27,8 @@ function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await auth.register(username, email, password, businessName);
+      const data = await auth.register(username, email, password, businessName);
+      setUser(data);
       void navigate({ to: "/" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");

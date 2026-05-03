@@ -6,4 +6,22 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig();
+const API_PROXY_TARGET = "http://127.0.0.1:8010";
+
+export default defineConfig({
+  vite: {
+    server: {
+      proxy: {
+        "/auth": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/audio": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/escalation-queue": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/escalation-rules": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/context": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/health": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/metrics": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/intelligence": { target: API_PROXY_TARGET, changeOrigin: true },
+        "/readiness": { target: API_PROXY_TARGET, changeOrigin: true },
+      },
+    },
+  },
+});

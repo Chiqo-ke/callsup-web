@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -32,6 +33,10 @@ export function AppShell({ children, title, subtitle, actions }: {
   actions?: React.ReactNode;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user, logout } = useAuth();
+  const initials = user?.username
+    ? user.username.slice(0, 2).toUpperCase()
+    : "??";
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -78,7 +83,7 @@ export function AppShell({ children, title, subtitle, actions }: {
           <div className="flex items-center gap-3 px-2 py-2 rounded-md bg-sidebar-accent/50">
             <Building2 className="h-5 w-5 opacity-80" />
             <div className="flex-1 min-w-0 leading-tight">
-              <div className="text-sm font-medium truncate">Acme Corp</div>
+              <div className="text-sm font-medium truncate">{user?.business_name ?? "My Business"}</div>
               <div className="text-xs opacity-70 truncate">Pro plan</div>
             </div>
           </div>
@@ -99,15 +104,13 @@ export function AppShell({ children, title, subtitle, actions }: {
             </Button>
             <div className="flex items-center gap-3 pl-3 border-l border-border">
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">JD</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">{initials}</AvatarFallback>
               </Avatar>
               <div className="hidden sm:block leading-tight">
-                <div className="text-sm font-medium">Jane Doe</div>
+                <div className="text-sm font-medium">{user?.username ?? ""}</div>
                 <div className="text-xs text-muted-foreground">Supervisor</div>
               </div>
-              <Link to="/login" aria-label="Sign out">
-                <Button variant="ghost" size="icon"><LogOut className="h-4 w-4" /></Button>
-              </Link>
+              <Button variant="ghost" size="icon" aria-label="Sign out" onClick={logout}><LogOut className="h-4 w-4" /></Button>
             </div>
           </div>
         </header>

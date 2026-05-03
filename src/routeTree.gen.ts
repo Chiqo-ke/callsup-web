@@ -60,9 +60,9 @@ const QueueIndexRoute = QueueIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const QueueIdRoute = QueueIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => QueueRoute,
+  id: '/queue/$id',
+  path: '/queue/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -143,6 +143,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   RulesRoute: typeof RulesRoute
   SettingsRoute: typeof SettingsRoute
+  QueueIdRoute: typeof QueueIdRoute
   QueueIndexRoute: typeof QueueIndexRoute
 }
 
@@ -206,10 +207,10 @@ declare module '@tanstack/react-router' {
     }
     '/queue/$id': {
       id: '/queue/$id'
-      path: '/$id'
+      path: '/queue/$id'
       fullPath: '/queue/$id'
       preLoaderRoute: typeof QueueIdRouteImport
-      parentRoute: typeof QueueRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -222,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   RulesRoute: RulesRoute,
   SettingsRoute: SettingsRoute,
+  QueueIdRoute: QueueIdRoute,
   QueueIndexRoute: QueueIndexRoute,
 }
 export const routeTree = rootRouteImport

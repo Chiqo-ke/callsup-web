@@ -1,25 +1,51 @@
 /**
  * CALLSUP API client
  * Base URL is configured via VITE_API_URL env variable.
- * Falls back to http://localhost:8000 for local development.
+ * Falls back to http://localhost:8010 for local development.
  */
 
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 
 const TOKEN_KEY = "callsup_token";
+const USER_KEY = "callsup_user";
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
 export function getToken(): string | null {
+  if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
+  if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken(): void {
+  if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
+}
+
+// ─── User storage helpers ─────────────────────────────────────────────────────
+
+export function saveUser(user: TokenResponse): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+export function getSavedUser(): TokenResponse | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as TokenResponse) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearUser(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(USER_KEY);
 }
 
 function authHeaders(): HeadersInit {
@@ -70,6 +96,11 @@ async function request<T>(
       if (err.detail) message = String(err.detail);
     } catch {
       // ignore parse failure
+    }
+    if (res.status === 401) {
+      clearToken();
+      clearUser();
+      window.location.href = "/login";
     }
     throw new ApiError(res.status, message);
   }
@@ -136,6 +167,13 @@ export interface EscalationTicket {
   conversation_history: { role: string; content: string }[];
 }
 
+export interface DashboardStats {
+  calls_handled_today: number;
+  pending_escalations: number;
+  resolved_today: number;
+  avg_handling_time_seconds: number | null;
+}
+
 export interface EscalationRule {
   id: string;
   business_id: string;
@@ -168,6 +206,7 @@ export const auth = {
       auth: false,
     });
     setToken(data.access_token);
+    saveUser(data);
     return data;
   },
 
@@ -182,6 +221,7 @@ export const auth = {
       auth: false,
     });
     setToken(data.access_token);
+    saveUser(data);
     return data;
   },
 
@@ -191,6 +231,7 @@ export const auth = {
 
   logout(): void {
     clearToken();
+    clearUser();
   },
 };
 
@@ -222,6 +263,10 @@ export const queue = {
     summary?: string;
   }): Promise<EscalationTicket> {
     return request<EscalationTicket>("POST", "/escalation-queue", { body: data });
+  },
+
+  stats(): Promise<DashboardStats> {
+    return request<DashboardStats>("GET", "/escalation-queue/stats");
   },
 
   /**
