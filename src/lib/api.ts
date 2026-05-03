@@ -363,9 +363,54 @@ export const context = {
 
 // ─── Audio / Conversations ────────────────────────────────────────────────────
 
+export interface VoiceChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+export interface VoiceChatResponse {
+  reply: string;
+  history: VoiceChatMessage[];
+  escalated: boolean;
+}
+
 export const audio = {
   getTranscript(convId: string): Promise<TranscriptSegment[]> {
     return request<TranscriptSegment[]>("GET", `/audio/transcript/${convId}`, { auth: false });
+  },
+
+  voiceChat(body: {
+    conv_id: string;
+    business_id: string;
+    message: string;
+    history: VoiceChatMessage[];
+    first_turn: boolean;
+  }): Promise<VoiceChatResponse> {
+    return request<VoiceChatResponse>("POST", "/audio/voice/chat", { body, auth: false });
+  },
+
+  async ingestAudio(formData: FormData): Promise<{ status: string; conv_id: string }> {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}/audio/ingest`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      throw new Error(`Audio ingest failed (${res.status}): ${text}`);
+    }
+    return res.json() as Promise<{ status: string; conv_id: string }>;
+  },
+
+  simulateCall(body: {
+    business_id: string;
+    conv_id: string;
+    script: string;
+  }): Promise<{ status: string; conv_id: string; segments: number }> {
+    return request("POST", "/audio/simulate", { body, auth: false });
   },
 };
 

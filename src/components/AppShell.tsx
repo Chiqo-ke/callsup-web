@@ -10,6 +10,7 @@ import {
   Search,
   Building2,
   LogOut,
+  Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/queue", label: "Escalation Queue", icon: Inbox, badge: 4 },
   { to: "/conversations", label: "Conversations", icon: PhoneCall },
+  { to: "/simulate", label: "Simulate Call", icon: Zap },
   { to: "/rules", label: "Escalation Rules", icon: ShieldAlert },
   { to: "/context", label: "Business Context", icon: BookOpen },
   { to: "/settings", label: "Settings", icon: Settings },

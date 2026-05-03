@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SimulateRouteImport } from './routes/simulate'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RulesRouteImport } from './routes/rules'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -19,6 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as QueueIndexRouteImport } from './routes/queue.index'
 import { Route as QueueIdRouteImport } from './routes/queue.$id'
 
+const SimulateRoute = SimulateRouteImport.update({
+  id: '/simulate',
+  path: '/simulate',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
+  '/simulate': typeof SimulateRoute
   '/queue/$id': typeof QueueIdRoute
   '/queue/': typeof QueueIndexRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
+  '/simulate': typeof SimulateRoute
   '/queue/$id': typeof QueueIdRoute
   '/queue': typeof QueueIndexRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/rules': typeof RulesRoute
   '/settings': typeof SettingsRoute
+  '/simulate': typeof SimulateRoute
   '/queue/$id': typeof QueueIdRoute
   '/queue/': typeof QueueIndexRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/rules'
     | '/settings'
+    | '/simulate'
     | '/queue/$id'
     | '/queue/'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/rules'
     | '/settings'
+    | '/simulate'
     | '/queue/$id'
     | '/queue'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/rules'
     | '/settings'
+    | '/simulate'
     | '/queue/$id'
     | '/queue/'
   fileRoutesById: FileRoutesById
@@ -143,12 +155,20 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   RulesRoute: typeof RulesRoute
   SettingsRoute: typeof SettingsRoute
+  SimulateRoute: typeof SimulateRoute
   QueueIdRoute: typeof QueueIdRoute
   QueueIndexRoute: typeof QueueIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/simulate': {
+      id: '/simulate'
+      path: '/simulate'
+      fullPath: '/simulate'
+      preLoaderRoute: typeof SimulateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   RulesRoute: RulesRoute,
   SettingsRoute: SettingsRoute,
+  SimulateRoute: SimulateRoute,
   QueueIdRoute: QueueIdRoute,
   QueueIndexRoute: QueueIndexRoute,
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { type TokenResponse, getSavedUser, clearToken, clearUser } from "./api";
 
 interface AuthContextValue {
@@ -10,7 +10,13 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUserState] = useState<TokenResponse | null>(() => getSavedUser());
+  // Initialize as null so SSR and initial client render both produce the same
+  // output, then populate from localStorage after hydration is complete.
+  const [user, setUserState] = useState<TokenResponse | null>(null);
+
+  useEffect(() => {
+    setUserState(getSavedUser());
+  }, []);
 
   function setUser(u: TokenResponse | null) {
     setUserState(u);
