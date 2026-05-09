@@ -50,33 +50,6 @@ const STATUS_CLASSES: Record<SimStatus, string> = {
   agent_speaking: "bg-green-50 text-green-700 border-green-200",
 };
 
-// ── Web Speech API types (not in lib.dom.d.ts by default) ────────────────────
-interface SpeechRecognitionEvent extends Event {
-  readonly resultIndex: number;
-  readonly results: SpeechRecognitionResultList;
-}
-interface SpeechRecognitionErrorEvent extends Event {
-  readonly error: string;
-}
-interface ISpeechRecognition extends EventTarget {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  onresult: ((ev: SpeechRecognitionEvent) => void) | null;
-  onerror: ((ev: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-type SpeechRecognitionCtor = new () => ISpeechRecognition;
-
-function getSpeechRecognition(): SpeechRecognitionCtor | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const w = window as any;
-  return (w.SpeechRecognition ?? w.webkitSpeechRecognition) as SpeechRecognitionCtor | null;
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 function SimulatePage() {
   const [started, setStarted] = useState(false);
@@ -88,11 +61,9 @@ function SimulatePage() {
   const [interimText, setInterimText] = useState("");
   const [escalated, setEscalated] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [speechSupported, setSpeechSupported] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -105,10 +76,6 @@ function SimulatePage() {
   useEffect(() => { convIdRef.current = convId; }, [convId]);
   useEffect(() => { historyRef.current = history; }, [history]);
   useEffect(() => { escalatedRef.current = escalated; }, [escalated]);
-
-  useEffect(() => {
-    if (!getSpeechRecognition()) setSpeechSupported(false);
-  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -133,8 +100,6 @@ function SimulatePage() {
   }
 
   function stopListening() {
-    recognitionRef.current?.abort();
-    recognitionRef.current = null;
     stopRecorder();
     releaseStream();
   }
@@ -200,17 +165,9 @@ function SimulatePage() {
   // ── Microphone pipeline ───────────────────────────────────────────────────────
   const startListening = useCallback(async () => {
     if (escalatedRef.current) return;
-    const SR = getSpeechRecognition();
-    if (!SR) {
-      setError("Speech recognition is not supported. Use Chrome or Edge, or type below.");
-      return;
-    }
-
     setError(null);
     setInterimText("");
     setStatus("listening");
-
-    // Start MediaRecorder — reuse stream acquired at conversation start if available
     try {
       const stream =
         streamRef.current ??
@@ -221,87 +178,34 @@ function SimulatePage() {
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
+      recorder.onstop = async () => {
+        const chunks = [...audioChunksRef.current];
+        if (chunks.length === 0) { setStatus("idle"); return; }
+        setStatus("processing");
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const fd = new FormData();
+        fd.append("file", blob, "recording.webm");
+        try {
+          const { text } = await audio.transcribeAudio(fd);
+          if (text.trim()) await handleTranscript(text.trim(), true);
+          else setStatus("idle");
+        } catch {
+          setError("Transcription failed. Please try again or type below.");
+          setStatus("idle");
+        }
+      };
       recorder.start(100);
       recorderRef.current = recorder;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Microphone access denied";
       setError(`Microphone permission denied: ${msg}. Please allow microphone access in your browser settings.`);
       setStatus("idle");
-      return;
     }
-
-    const recognition = new SR();
-    recognition.lang = "en-US";
-    recognition.continuous = false;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = "";
-      let finalText = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalText += t;
-        else interim += t;
-      }
-      if (interim) setInterimText(interim);
-      if (finalText) {
-        setInterimText("");
-        recognitionRef.current = null;
-        stopRecorder();
-        const chunks = [...audioChunksRef.current];
-        setStatus("processing");
-
-        // Fire-and-forget: upload audio blob to backend for logging
-        if (chunks.length > 0) {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const fd = new FormData();
-          fd.append("business_id", businessIdRef.current);
-          fd.append("conv_id", convIdRef.current);
-          fd.append("file", blob, "recording.webm");
-          void audio.ingestAudio(fd).catch(() => {
-            // fallback: store as text-based transcript
-            void audio
-              .simulateCall({
-                business_id: businessIdRef.current,
-                conv_id: convIdRef.current,
-                script: `Caller: ${finalText.trim()}`,
-              })
-              .catch(() => undefined);
-          });
-        }
-
-        void handleTranscript(finalText, true);
-      }
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error !== "no-speech" && event.error !== "aborted") {
-        setError(`Microphone error: ${event.error}`);
-      }
-      setInterimText("");
-      setStatus("idle");
-      stopRecorder();
-      recognitionRef.current = null;
-    };
-
-    recognition.onend = () => {
-      // Reset mic button if recognition ended without a final result
-      if (recognitionRef.current) {
-        recognitionRef.current = null;
-        stopRecorder();
-        setInterimText("");
-        if (status === "listening") setStatus("idle");
-      }
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function stopMic() {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
     stopRecorder();
+    releaseStream();
     setInterimText("");
     setStatus("idle");
   }
@@ -406,12 +310,7 @@ function SimulatePage() {
                   Speak into your mic — your voice is transcribed live, sent to the AI agent,
                   and the agent responds both in text and audio, just like a real call.
                 </p>
-                {!speechSupported && (
-                  <p className="text-xs rounded-md bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2">
-                    Speech recognition is not available in this browser. Chrome or Edge is
-                    recommended. You can still type instead.
-                  </p>
-                )}
+
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button
@@ -638,12 +537,10 @@ function SimulatePage() {
             </span>
             AI Agent
           </span>
-          {speechSupported && (
-            <span className="flex items-center gap-1">
-              <Mic className="h-3 w-3" />
-              {micActive ? "Tap mic to stop" : "Tap mic to speak"}
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            <Mic className="h-3 w-3" />
+            {micActive ? "Tap mic to stop" : "Tap mic to speak"}
+          </span>
         </div>
       </div>
     </AppShell>

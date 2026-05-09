@@ -405,6 +405,22 @@ export const audio = {
     return res.json() as Promise<{ status: string; conv_id: string }>;
   },
 
+  async transcribeAudio(formData: FormData): Promise<{ text: string }> {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}/audio/voice/stt`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      throw new Error(`Transcription failed (${res.status}): ${text}`);
+    }
+    return res.json() as Promise<{ text: string }>;
+  },
+
   simulateCall(body: {
     business_id: string;
     conv_id: string;
