@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +10,6 @@ import { Search, Filter, Radio } from "lucide-react";
 import { queue, type EscalationTicket } from "@/lib/api";
 
 export const Route = createFileRoute("/queue/")({
-  head: () => ({ meta: [{ title: "Escalation Queue — CALLSUP" }] }),
   component: QueuePage,
 });
 

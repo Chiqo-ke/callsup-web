@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,6 @@ import { Search, PhoneCall, User, Bot, Loader2 } from "lucide-react";
 import { queue, audio, type EscalationTicket, type TranscriptSegment } from "@/lib/api";
 
 export const Route = createFileRoute("/conversations")({
-  head: () => ({ meta: [{ title: "Conversations — CALLSUP" }] }),
   component: ConversationsPage,
 });
 

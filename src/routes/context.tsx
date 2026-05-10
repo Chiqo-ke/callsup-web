@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,6 @@ import { Plus, AlertTriangle, FileText, Pencil, Trash2, Clock, Loader2, X } from
 import { context, type ContextItem } from "@/lib/api";
 
 export const Route = createFileRoute("/context")({
-  head: () => ({ meta: [{ title: "Business Context — CALLSUP" }] }),
   component: ContextPage,
 });
 

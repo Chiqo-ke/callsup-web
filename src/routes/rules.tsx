@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,6 @@ import { Plus, Sparkles, Pencil, Trash2, Loader2, X } from "lucide-react";
 import { rules as rulesApi, type EscalationRule } from "@/lib/api";
 
 export const Route = createFileRoute("/rules")({
-  head: () => ({ meta: [{ title: "Escalation Rules — CALLSUP" }] }),
   component: RulesPage,
 });
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { auth } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/register")({
-  head: () => ({ meta: [{ title: "Create workspace — CALLSUP" }] }),
   component: RegisterPage,
 });
 

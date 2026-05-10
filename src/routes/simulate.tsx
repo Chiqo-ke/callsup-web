@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ import { audio, getSavedUser, type VoiceChatMessage } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/simulate")({
-  head: () => ({ meta: [{ title: "Simulate Call — CALLSUP" }] }),
   component: SimulatePage,
 });
 

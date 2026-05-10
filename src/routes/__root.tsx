@@ -1,9 +1,7 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, redirect } from "@tanstack/react-router";
+﻿import { Outlet, Link, createRootRoute, redirect } from "@tanstack/react-router";
 import React from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { getToken } from "@/lib/api";
-
-import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -29,8 +27,6 @@ function NotFoundComponent() {
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
-    // localStorage is not available during SSR — skip auth check on server
-    if (typeof window === "undefined") return;
     const token = getToken();
     const publicPaths = ["/login", "/register"];
     const isPublic = publicPaths.some((p) => location.pathname.startsWith(p));
@@ -41,44 +37,9 @@ export const Route = createRootRoute({
       throw redirect({ to: "/" });
     }
   },
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Callsup" },
-      { name: "description", content: "Callsup — Intelligent Call Management" },
-      { name: "author", content: "Callsup" },
-      { property: "og:title", content: "Callsup" },
-      { property: "og:description", content: "Callsup — Intelligent Call Management" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@callsup" },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   return (

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+﻿import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,6 @@ import { ArrowLeft, User, Bot, CheckCircle2, UserCheck, Clock, Loader2 } from "l
 import { queue, auth, type EscalationTicket } from "@/lib/api";
 
 export const Route = createFileRoute("/queue/$id")({
-  head: () => ({ meta: [{ title: "Ticket — CALLSUP" }] }),
   component: TicketDetailPage,
 });
 
