@@ -115,7 +115,20 @@ function SimulatePage() {
       voices.find((v) => v.lang.startsWith("en")) ??
       null;
     if (preferred) utter.voice = preferred;
-    utter.onend = () => onEnd?.();
+
+    // Guard so onEnd is called exactly once even if both the event and the
+    // safety timer fire, or if speechSynthesis errors out silently.
+    let called = false;
+    const done = () => { if (!called) { called = true; onEnd?.(); } };
+
+    // Safety fallback: if onend never fires (browser bug, tab focus loss, etc.)
+    // reset status after estimated speech duration + 3 s buffer.
+    const wordCount = text.trim().split(/\s+/).length;
+    const estimatedMs = Math.max((wordCount / 150) * 60_000 + 3_000, 4_000);
+    const timer = window.setTimeout(done, estimatedMs);
+
+    utter.onend = () => { window.clearTimeout(timer); done(); };
+    utter.onerror = () => { window.clearTimeout(timer); done(); };
     window.speechSynthesis.speak(utter);
   }
 
